@@ -59,7 +59,6 @@ app.post('/cadastro', async (req, res) => {
 });
 
 
-// 🔥 LOGIN CORRIGIDO
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
@@ -77,7 +76,6 @@ app.post('/login', async (req, res) => {
 
         const senhaCorreta = await bcrypt.compare(password, usuario.password);
 
-        // 🔍 LOGS PRA DEBUG
         console.log("DIGITADO:", password);
         console.log("HASH DB:", usuario.password);
         console.log("RESULTADO:", senhaCorreta);
