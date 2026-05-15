@@ -2,9 +2,9 @@ name: integracao continua
 
 on:
   push:
-    branches: ["develop"]
+    branches: ["develop", "staging"]
   pull_request:
-    branches: ["develop"]
+    branches: ["develop", "staging"]
 
 jobs:
   estagio_build:
@@ -112,3 +112,61 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN_S }}
           SONAR_HOST_URL: "https://devsecops.dcotech.com.br"
+
+  job_release_docker:
+    needs: estagio_lint
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Login no Registry Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build e Push da Imagem
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: rafaaaaa/rafa-restaurante-app:latest
+
+  job_trivy_sonar:
+    needs: job_release_docker
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código para o Sonar
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Criar sonar-project.properties (para escopo do projeto)
+        run: |
+          cat > sonar-project.properties <<'EOF'
+          sonar.projectKey=marmitatech-pro
+          sonar.projectName=MarmitaTech Prof
+          sonar.sources=.
+          sonar.inclusions=**/*.js
+          sonar.sourceEncoding=UTF-8
+          sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**
+          EOF
+
+      - name: Scan de Segurança com Trivy gerando JSON
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'rafaaaaa/rafa-restaurante-app:latest'
+          format: 'json'
+          output: 'trivy-results.json'
+
+      - name: SonarQube lendo o Trivy (External Issues)
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.TOKEN_S }}
+          SONAR_HOST_URL: "https://devsecops.dcotech.com.br"
+        with:
+          args: >
+            -Dsonar.externalIssuesReportPaths=trivy-results.json
