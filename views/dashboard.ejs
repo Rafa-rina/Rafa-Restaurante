@@ -1,37 +1,604 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
+
 <head>
-    <title>MarmitaTech - Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RafaRestaurante - Gestão Premium</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        .grid { display: flex; gap: 20px; }
-        .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; width: 300px; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            /* Slate 900 */
+            --card-bg: rgba(30, 41, 59, 0.6);
+            /* Slate 800 with opacity */
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #8b5cf6;
+            /* Violet 500 */
+            --primary-hover: #a78bfa;
+            /* Violet 400 */
+            --secondary: #ec4899;
+            /* Pink 500 */
+            --accent: #10b981;
+            /* Emerald 500 */
+            --text-primary: #f8fafc;
+            /* Slate 50 */
+            --text-secondary: #94a3b8;
+            /* Slate 400 */
+
+            /* Kanban Columns */
+            --col-aberto: rgba(244, 63, 94, 0.15);
+            /* Rose */
+            --col-cozinha: rgba(245, 158, 11, 0.15);
+            /* Amber */
+            --col-entrega: rgba(59, 130, 246, 0.15);
+            /* Blue */
+            --col-entregue: rgba(16, 185, 129, 0.15);
+            /* Emerald */
+        }
+
+        /* Base resets & Body */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-color);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem 4rem;
+            line-height: 1.5;
+        }
+
+        /* Glassmorphism helpers */
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f8fafc, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: -1px;
+        }
+
+        .header h1 span {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        /* Beautiful Buttons */
+        button,
+        .btn {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover,
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(139, 92, 246, 0.4);
+            filter: brightness(1.1);
+        }
+
+        button:active,
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent), #059669);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 12px 25px rgba(16, 185, 129, 0.35);
+        }
+
+        .logout-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logout-link:hover {
+            color: #f43f5e;
+            background: rgba(244, 63, 94, 0.1);
+            border-color: rgba(244, 63, 94, 0.2);
+        }
+
+        /* Grid Layouts */
+        .top-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card-container {
+            padding: 2rem;
+        }
+
+        .card-container h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-container h3 span {
+            color: var(--primary);
+        }
+
+        /* Forms */
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .form-row.vertical {
+            flex-direction: column;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.85rem 1.2rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        select option {
+            background: #1e293b;
+            color: #f8fafc;
+        }
+
+        /* Kanban Board */
+        .kanban-section-title {
+            font-size: 1.8rem;
+            margin-bottom: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .kanban-col {
+            padding: 1.5rem 1rem;
+        }
+
+        .col-Aberto {
+            background: linear-gradient(180deg, var(--col-aberto) 0%, rgba(30, 41, 59, 0.3) 100%);
+            border-top: 4px solid #f43f5e;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .col-Cozinha {
+            background: linear-gradient(180deg, var(--col-cozinha) 0%, rgba(30, 41, 59, 0.3) 100%);
+            border-top: 4px solid #f59e0b;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .col-Entrega {
+            background: linear-gradient(180deg, var(--col-entrega) 0%, rgba(30, 41, 59, 0.3) 100%);
+            border-top: 4px solid #3b82f6;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .col-Entregue {
+            background: linear-gradient(180deg, var(--col-entregue) 0%, rgba(30, 41, 59, 0.3) 100%);
+            border-top: 4px solid #10b981;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .kanban-header {
+            font-weight: 800;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        /* Stats badges on kanban headers */
+        .count-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .kanban-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .kanban-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 1.25rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+        }
+
+        .kanban-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .kanban-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .col-Aberto .kanban-card::before {
+            background: #f43f5e;
+            box-shadow: 0 0 10px #f43f5e;
+        }
+
+        .col-Cozinha .kanban-card::before {
+            background: #f59e0b;
+            box-shadow: 0 0 10px #f59e0b;
+        }
+
+        .col-Entrega .kanban-card::before {
+            background: #3b82f6;
+            box-shadow: 0 0 10px #3b82f6;
+        }
+
+        .col-Entregue .kanban-card::before {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .kanban-card .order-id {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        .kanban-card .customer {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .kanban-card .item-info {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 400;
+        }
+
+        .kanban-card .price {
+            font-weight: 700;
+            color: var(--accent);
+            margin-top: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .advance-btn {
+            width: 100%;
+            margin-top: 1.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            box-shadow: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.6rem;
+            font-size: 0.85rem;
+        }
+
+        .advance-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.95rem;
+            margin-top: 2rem;
+            opacity: 0.6;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .kanban-board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            body {
+                padding: 1.5rem 2rem;
+            }
+
+            .top-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row:not(.vertical) {
+                flex-direction: column;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1.5rem;
+                text-align: center;
+            }
+
+            body {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
-<body>
-    <h1>Painel Administrativo - MarmitaTech</h1>
-    <div class="grid">
-        <div class="card">
-            <h3>Novo Item (Ingrediente)</h3>
-            <form action="/add-item" method="POST">
-                <input type="text" name="name" placeholder="Nome (Ex: Batata Doce)" required><br><br>
-                <input type="text" name="category" placeholder="Categoria (Ex: Carboidrato)"><br><br>
-                <button type="submit">Cadastrar Item</button>
-            </form>
-        </div>
 
-        <div class="card">
-            <h3>Itens Cadastrados</h3>
-            <ul>
-                <% items.forEach(item => { %>
-                    <li><%= item.name %> (<%= item.category %>)</li>
-                <% }) %>
-            </ul>
+<body>
+    <div class="header glass">
+        <h1>🍽️ <span>Rafa</span>Restaurante</h1>
+        <div class="header-actions">
+            <a href="/admin/export" class="btn btn-success">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Relatório CSV
+            </a>
+            <a href="/" class="logout-link">Sair</a>
         </div>
     </div>
 
-    <hr>
-    <h2>📦 Pedidos Ativos</h2>
-    <p><i>Aqui será implementado o Kanban nas próximas aulas...</i></p>
+    <div class="top-grid">
+        <div class="card-container glass">
+            <h3><span>✨</span> Novo Pedido</h3>
+            <form action="/orders" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <input type="text" name="customer_name" placeholder="Nome do Cliente" autocomplete="off"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <select name="item_id" required>
+                            <option value="">Selecione a Marmita...</option>
+                            <% items.forEach(item=> { %>
+                                <option value="<%= item.id %>">
+                                    <%= item.name %> (<%= item.category %>)
+                                </option>
+                                <% }) %>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 0.5;">
+                        <input type="number" step="0.01" name="price" placeholder="R$ 0,00" required>
+                    </div>
+                    <button type="submit">Cadastrar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-container glass">
+            <h3><span>+</span> Novo Item no Cardápio</h3>
+            <form action="/add-item" method="POST">
+                <div class="form-row vertical" style="gap: 1rem;">
+                    <input type="text" name="name" placeholder="Nome (Ex: Batata Doce)" autocomplete="off" required>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" name="category" placeholder="Categoria (Ex: Carboidrato)">
+                        <button type="submit" style="white-space: nowrap;">Adicionar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <h2 class="kanban-section-title">🚀 Painel de Produção</h2>
+
+    <div class="kanban-board">
+        <% const statuses=['Aberto', 'Cozinha' , 'Entrega' , 'Entregue' ]; %>
+            <% statuses.forEach(status=> { %>
+                <% const filteredOrders=orders.filter(o=> o.status === status); %>
+                    <div class="kanban-col glass col-<%= status %>">
+                        <div class="kanban-header">
+                            <%= status %>
+                                <span class="count-badge">
+                                    <%= filteredOrders.length %>
+                                </span>
+                        </div>
+
+                        <div class="kanban-items">
+                            <% if (filteredOrders.length===0) { %>
+                                <div class="empty-state">Sem pedidos aqui</div>
+                                <% } %>
+
+                                    <% filteredOrders.forEach(order=> { %>
+                                        <div class="kanban-card">
+                                            <span class="order-id">#ID_<%= order.id.toString().padStart(4, '0' ) %>
+                                            </span>
+                                            <div class="customer">
+                                                <svg width="18" height="18" fill="none" stroke="var(--primary)"
+                                                    stroke-width="2" viewBox="0 0 24 24">
+                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                    <circle cx="12" cy="7" r="4"></circle>
+                                                </svg>
+                                                <%= order.customer_name %>
+                                            </div>
+
+                                            <div class="item-info">
+                                                <svg width="16" height="16" fill="none" stroke="var(--text-secondary)"
+                                                    stroke-width="2" viewBox="0 0 24 24">
+                                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6">
+                                                    </path>
+                                                </svg>
+                                                <span>
+                                                    <%= order.item_name || 'Item Indisponível' %>
+                                                </span>
+                                            </div>
+
+                                            <div class="item-info price">
+                                                R$ <%= Number(order.price || 0).toFixed(2).replace('.', ',' ) %>
+                                            </div>
+
+                                            <div class="item-info"
+                                                style="font-size: 0.8rem; opacity: 0.8; margin-top: 8px;">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor"
+                                                    stroke-width="2" viewBox="0 0 24 24">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                                </svg>
+                                                <%= new Date(order.created_at || Date.now()).toLocaleTimeString([],
+                                                    {hour: '2-digit' , minute:'2-digit'}) %>
+                                            </div>
+
+                                            <% if(status !=='Entregue' ) { %>
+                                                <form action="/orders/<%= order.id %>/advance" method="POST">
+                                                    <button type="submit" class="advance-btn">Avançar ➔</button>
+                                                </form>
+                                                <% } %>
+                                        </div>
+                                        <% }) %>
+                        </div>
+                    </div>
+                    <% }) %>
+    </div>
 </body>
+
 </html>
