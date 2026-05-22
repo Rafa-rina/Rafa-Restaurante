@@ -86,24 +86,23 @@ jobs:
   job_sonar:
     needs: estagio_lint
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-    - name: Criar sonar-project.properties
-  run: |
-    cat > sonar-project.properties <<'EOF'
-    sonar.projectKey=rafa-restaurante
-    sonar.projectName=Rafa-Restaurante
-    sonar.sources=.
-    sonar.inclusions=**/*.js
-    sonar.sourceEncoding=UTF-8
-    sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**
-    EOF
-    
+      - name: Criar sonar-project.properties
+        run: |
+          cat > sonar-project.properties <<'EOF'
+          sonar.projectKey=rafa-restaurante
+          sonar.projectName=Rafa-Restaurante
+          sonar.sources=.
+          sonar.inclusions=**/*.js
+          sonar.sourceEncoding=UTF-8
+          sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**
+          EOF
+
       - name: Exibir configuração do Sonar
         run: cat sonar-project.properties
 
