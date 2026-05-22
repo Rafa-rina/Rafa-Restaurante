@@ -93,17 +93,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Criar sonar-project.properties
-        run: |
-          cat > sonar-project.properties <<'EOF'
-          sonar.projectKey=marmitatech-pro
-          sonar.projectName=MarmitaTech Prof
-          sonar.sources=.
-          sonar.inclusions=**/*.js
-          sonar.sourceEncoding=UTF-8
-          sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**
-          EOF
-
+    - name: Criar sonar-project.properties
+  run: |
+    cat > sonar-project.properties <<'EOF'
+    sonar.projectKey=rafa-restaurante
+    sonar.projectName=Rafa-Restaurante
+    sonar.sources=.
+    sonar.inclusions=**/*.js
+    sonar.sourceEncoding=UTF-8
+    sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**
+    EOF
+    
       - name: Exibir configuração do Sonar
         run: cat sonar-project.properties
 
