@@ -469,10 +469,68 @@
                 padding: 1rem;
             }
         }
+
+        /* Toasts System */
+        #toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            color: #f8fafc;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            min-width: 300px;
+            transform: translateX(120%);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--accent);
+        }
+
+        .toast-error {
+            border-left: 4px solid #f43f5e;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast-message {
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 
 <body>
+    <div id="toast-container"></div>
     <div class="header glass">
         <h1>🍽️ <span>Rafa</span>Restaurante</h1>
         <div class="header-actions">
@@ -597,8 +655,64 @@
                                         <% }) %>
                         </div>
                     </div>
-                    <% }) %>
     </div>
+    
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = type === 'success' ? '✅' : '❌';
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icon}</span>
+                <span class="toast-message">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Force reflow
+            toast.offsetHeight;
+            
+            toast.classList.add('show');
+            
+            // Auto-hide after 4 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        }
+
+        // Parse query params to trigger toasts
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('success')) {
+                const val = urlParams.get('success');
+                if (val === 'order_created') {
+                    showToast('Pedido criado com sucesso', 'success');
+                } else if (val === 'order_advanced') {
+                    showToast('Pedido avançado de status!', 'success');
+                } else {
+                    showToast('Operação realizada com sucesso!', 'success');
+                }
+                // Clear the query string in history without refreshing
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (urlParams.has('error')) {
+                const val = urlParams.get('error');
+                if (val === 'db_error' || val === 'save_error') {
+                    showToast('Erro ao salvar', 'error');
+                } else if (val === 'invalid_data') {
+                    showToast('Dados inválidos inseridos.', 'error');
+                } else if (val === 'not_found') {
+                    showToast('Pedido não encontrado.', 'error');
+                } else {
+                    showToast('Ocorreu um erro inesperado.', 'error');
+                }
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
 </body>
 
 </html>

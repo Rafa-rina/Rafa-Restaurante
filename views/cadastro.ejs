@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Rafa Restaurant - Login</title>
+<title>Rafa Restaurant - Cadastro</title>
 
 <style>
 body {
@@ -15,7 +15,7 @@ body {
     background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
 }
 
-/* CARD LOGIN */
+/* CARD CADASTRO */
 .login-box {
     background: white;
     padding: 40px 35px;
@@ -73,12 +73,6 @@ button:hover {
     background: linear-gradient(135deg,#187bcd,#009ac1);
 }
 
-.footer {
-    margin-top: 15px;
-    font-size: 12px;
-    color: gray;
-}
-
 .links {
     margin-top: 20px;
     font-size: 14px;
@@ -92,6 +86,12 @@ button:hover {
 
 .links a:hover {
     text-decoration: underline;
+}
+
+.footer {
+    margin-top: 20px;
+    font-size: 12px;
+    color: gray;
 }
 
 /* Toasts System */
@@ -157,23 +157,23 @@ button:hover {
 
 <div id="toast-container"></div>
 
-<form action="/login" method="POST" class="login-box">
+<form action="/cadastro" method="POST" class="login-box">
 
     <!-- LOGO RESTAURANTE -->
     <img src="https://cdn-icons-png.flaticon.com/512/3075/3075977.png"
          class="logo"
          alt="Logo Restaurante">
 
-    <h2>🍽️ Rafa Restaurant</h2>
+    <h2>🍽️ Cadastro - Rafa Restaurant</h2>
 
-    <input type="text" name="username" placeholder="Usuário" required>
+    <input type="text" name="username" placeholder="Novo Usuário" required>
 
-    <input type="password" name="password" placeholder="Senha" required>
+    <input type="password" name="password" placeholder="Nova Senha" required>
 
-    <button type="submit">Entrar</button>
+    <button type="submit">Cadastrar</button>
 
     <div class="links">
-        Ainda não tem conta? <a href="/cadastro">Cadastre-se</a>
+        Já tem uma conta? <a href="/">Voltar para o Login</a>
     </div>
 
     <div class="footer">
@@ -210,19 +210,9 @@ button:hover {
 
     window.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('success')) {
-            const val = urlParams.get('success');
-            if (val === 'user_created') {
-                showToast('Usuário cadastrado com sucesso', 'success');
-            } else {
-                showToast('Operação realizada com sucesso!', 'success');
-            }
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else if (urlParams.has('error')) {
+        if (urlParams.has('error')) {
             const val = urlParams.get('error');
-            if (val === 'invalid_login') {
-                showToast('Login inválido', 'error');
-            } else if (val === 'save_error') {
+            if (val === 'save_error') {
                 showToast('Erro ao salvar', 'error');
             } else {
                 showToast('Ocorreu um erro inesperado.', 'error');

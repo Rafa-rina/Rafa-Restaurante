@@ -52,9 +52,10 @@ app.post('/cadastro', async (req, res) => {
             [username, senhaHash]
         );
 
-        res.send('<h1>Usuário cadastrado com sucesso!</h1><a href="/">Ir para login</a>');
+        res.redirect('/?success=user_created');
     } catch (err) {
-        res.status(500).send('Erro ao cadastrar usuário.');
+        console.error(err);
+        res.redirect('/cadastro?error=save_error');
     }
 });
 
@@ -69,7 +70,7 @@ app.post('/login', async (req, res) => {
         );
 
         if (rows.length === 0) {
-            return res.send('<h1>Login Inválido</h1><a href="/">Voltar</a>');
+            return res.redirect('/?error=invalid_login');
         }
 
         const usuario = rows[0];
@@ -83,12 +84,12 @@ app.post('/login', async (req, res) => {
         if (senhaCorreta) {
             return res.redirect('/dashboard');
         } else {
-            return res.send('<h1>Login Inválido</h1><a href="/">Voltar</a>');
+            return res.redirect('/?error=invalid_login');
         }
 
     } catch (err) {
         console.error(err);
-        return res.status(500).send('Erro no banco.');
+        return res.redirect('/?error=save_error');
     }
 });
 
@@ -101,15 +102,28 @@ app.get('/dashboard', async (req, res) => {
 
 app.post('/orders', async (req, res) => {
     const { customer_name, item_id, price } = req.body;
+
+    if (!customer_name || customer_name.trim() === "") {
+        return res.status(400).send("Nome inválido");
+    }
+
+    if (!price || Number(price) <= 0) {
+        return res.status(400).send("Preço inválido");
+    }
+
+    if (!item_id) {
+        return res.status(400).send("Marmita inválida");
+    }
+
     try {
         await pool.query(
             'INSERT INTO orders (customer_name, item_id, price) VALUES (?, ?, ?)',
-            [customer_name, item_id, price || 0.00]
+            [customer_name.trim(), item_id, price]
         );
-        res.redirect('/dashboard');
+        res.redirect('/dashboard?success=order_created');
     } catch (err) {
         console.error(err);
-        res.status(500).send('Erro ao criar pedido.');
+        res.redirect('/dashboard?error=db_error');
     }
 });
 
@@ -126,11 +140,13 @@ app.post('/orders/:id/advance', async (req, res) => {
             else nextStatus = 'Entregue';
 
             await pool.query('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, id]);
+            res.redirect('/dashboard?success=order_advanced');
+        } else {
+            res.redirect('/dashboard?error=not_found');
         }
-        res.redirect('/dashboard');
     } catch (err) {
         console.error(err);
-        res.status(500).send('Erro ao atualizar status.');
+        res.redirect('/dashboard?error=db_error');
     }
 });
 
