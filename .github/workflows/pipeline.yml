@@ -1,29 +1,27 @@
-name: integracao continua
+name: integracao continua e staging
 
 on:
   push:
     branches: ["develop", "staging"]
   pull_request:
-    branches: ["develop", "staging"]
+    branches: ["develop"]
 
 jobs:
   estagio_build:
+    if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Configurar Node.js 18
-        uses: actions/setup-node@v4
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v5
         with:
-          node-version: "18"
-          package-manager-cache: false
-
-      - name: Gerar lockfile temporário
-        run: npm install --package-lock-only
+          node-version: "22"
+          cache: "npm"
 
       - name: Instalar dependências
-        run: npm install
+        run: npm ci
 
       - name: Verificar sintaxe de todos os arquivos JS
         run: |
@@ -34,30 +32,25 @@ jobs:
             -exec node --check {} \;
 
   estagio_lint:
+    if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     needs: estagio_build
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Configurar Node.js 18
-        uses: actions/setup-node@v4
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v5
         with:
-          node-version: "18"
-          package-manager-cache: false
+          node-version: "22"
+          cache: "npm"
 
-      - name: Gerar lockfile temporário
-        run: npm install --package-lock-only
+      - name: Instalar dependências (inclui devDependencies com eslint)
+        run: npm ci
 
-      - name: Instalar dependências
-        run: npm install
-
-      - name: Instalar dependências temporárias do lint
-        run: npm install --no-save eslint globals
-
-      - name: Criar configuração temporária do ESLint
+      - name: Criar configuração do ESLint
         run: |
-          cat > eslint.config.js <<'EOF'
+          cat > eslint.config.js << 'EOF'
           const globals = require("globals");
 
           module.exports = [
@@ -81,58 +74,66 @@ jobs:
           EOF
 
       - name: Rodar lint
-        run: npx eslint .
+        run: npm run lint
 
   job_sonar:
     needs: estagio_lint
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Criar sonar-project.properties
+      - name: Criar sonar-project.properties dinâmico
         run: |
-          cat > sonar-project.properties <<'EOF'
-          sonar.projectKey=marmitatech-pro
-          sonar.projectName=MarmitaTech Prof
-          sonar.sources=.
-          sonar.inclusions=**/*.js
-          sonar.sourceEncoding=UTF-8
-          sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**
-          EOF
+          echo "sonar.projectKey=${{ github.event.repository.name }}" > sonar-project.properties
+          echo "sonar.projectName=${{ github.event.repository.name }}" >> sonar-project.properties
+          echo "sonar.branch.name=${{ github.ref_name }}" >> sonar-project.properties
+          echo "sonar.sources=." >> sonar-project.properties
+          echo "sonar.sourceEncoding=UTF-8" >> sonar-project.properties
+          echo "sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**" >> sonar-project.properties
 
       - name: Exibir configuração do Sonar
         run: cat sonar-project.properties
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
+        uses: sonarsource/sonarqube-scan-action@v6
         env:
-          SONAR_TOKEN: ${{ secrets.TOKEN_S }}
+          SONAR_TOKEN: ${{ secrets.TOKEN_SONAR }}
           SONAR_HOST_URL: "https://devsecops.dcotech.com.br"
+        with:
+          args: >
+            -Dsonar.branch.name=${{ github.ref_name }}
+
+  # ==========================================
+  # ETAPAS DE STAGING
+  # ==========================================
 
   job_release_docker:
-    needs: estagio_lint
     if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Login no Registry Docker Hub
+      - name: Login no Docker Hub
         uses: docker/login-action@v3
         with:
           username: rafaaaaa
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.TOKEN_DOCKERHUB }}
 
-      - name: Build e Push da Imagem
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: rafaaaaa/rafa-restaurante-app:latest
+      - name: Build da Imagem Docker
+        run: |
+          docker build \
+            -t rafaaaaa/rafa-restaurante-app:${{ github.sha }} \
+            -t rafaaaaa/rafa-restaurante-app:latest .
+
+      - name: Push da Imagem para o Docker Hub
+        run: |
+          docker push rafaaaaa/rafa-restaurante-app:${{ github.sha }}
+          docker push rafaaaaa/rafa-restaurante-app:latest
 
   job_trivy_sonar:
     needs: job_release_docker
@@ -140,33 +141,126 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código para o Sonar
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Criar sonar-project.properties (para escopo do projeto)
-        run: |
-          cat > sonar-project.properties <<'EOF'
-          sonar.projectKey=marmitatech-pro
-          sonar.projectName=MarmitaTech Prof
-          sonar.sources=.
-          sonar.inclusions=**/*.js
-          sonar.sourceEncoding=UTF-8
-          sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**
-          EOF
-
-      - name: Scan de Segurança com Trivy gerando JSON
-        uses: aquasecurity/trivy-action@master
+      - name: Scan de Segurança com Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: 'rafaaaaa/rafa-restaurante-app:latest'
-          format: 'json'
-          output: 'trivy-results.json'
+          image-ref: rafaaaaa/rafa-restaurante-app:${{ github.sha }}
+          format: json
+          output: trivy-result.json
+          exit-code: 0
 
-      - name: SonarQube lendo o Trivy (External Issues)
-        uses: sonarsource/sonarqube-scan-action@master
+      - name: Converter relatório do Trivy para formato do Sonar
+        run: |
+          python3 - <<'PYEOF'
+          import json, os
+
+          with open("trivy-result.json") as f:
+            trivy = json.load(f)
+
+          severity_map = {
+            "CRITICAL": "CRITICAL",
+            "HIGH":     "MAJOR",
+            "MEDIUM":   "MINOR",
+            "LOW":      "INFO",
+            "UNKNOWN":  "INFO"
+          }
+
+          issues = []
+          for result in trivy.get("Results", []):
+            target_type = result.get("Type", "")
+            if target_type in ("node-pkg", "npm"):
+              file_path = "package.json"
+            else:
+              file_path = "Dockerfile"
+
+            for vuln in result.get("Vulnerabilities", []):
+              title = vuln.get("Title") or vuln.get("Description") or vuln.get("VulnerabilityID", "Sem descrição")
+              pkg   = vuln.get("PkgName", "")
+              ver   = vuln.get("InstalledVersion", "")
+              fixed = vuln.get("FixedVersion", "")
+              msg   = f"[{vuln.get('VulnerabilityID')}] {pkg} {ver}: {title}"
+              if fixed:
+                msg += f" (fix: {fixed})"
+
+              issues.append({
+                "engineId": "trivy",
+                "ruleId":   vuln.get("VulnerabilityID", "UNKNOWN"),
+                "severity": severity_map.get(vuln.get("Severity", "UNKNOWN"), "INFO"),
+                "type":     "VULNERABILITY",
+                "primaryLocation": {
+                  "message":  msg[:255],
+                  "filePath": file_path
+                }
+              })
+
+          with open("sonar-trivy.json", "w") as f:
+            json.dump({"issues": issues}, f, indent=2)
+
+          print(f"Convertidas {len(issues)} vulnerabilidades para sonar-trivy.json")
+          PYEOF
+
+      - name: Criar sonar-project.properties para staging
+        run: |
+          echo "sonar.projectKey=${{ github.event.repository.name }}" > sonar-project.properties
+          echo "sonar.projectName=${{ github.event.repository.name }}" >> sonar-project.properties
+          echo "sonar.branch.name=${{ github.ref_name }}" >> sonar-project.properties
+          echo "sonar.sources=." >> sonar-project.properties
+          echo "sonar.sourceEncoding=UTF-8" >> sonar-project.properties
+          echo "sonar.exclusions=node_modules/**,.git/**,.github/**,coverage/**,dist/**" >> sonar-project.properties
+          echo "sonar.externalIssuesReportPaths=sonar-trivy.json" >> sonar-project.properties
+
+      - name: SonarQube Scan com resultado do Trivy
+        uses: sonarsource/sonarqube-scan-action@v6
         env:
-          SONAR_TOKEN: ${{ secrets.TOKEN_S }}
+          SONAR_TOKEN: ${{ secrets.TOKEN_SONAR }}
           SONAR_HOST_URL: "https://devsecops.dcotech.com.br"
         with:
           args: >
-            -Dsonar.externalIssuesReportPaths=trivy-results.json
+            -Dsonar.branch.name=${{ github.ref_name }}
+
+  job_deploy_aws:
+    needs: job_trivy_sonar
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v5
+
+      - name: Preparar arquivo Compose com o identificador do aluno
+        run: |
+          cp docker-compose.yml docker-compose-rafael-duraes.yml
+
+      - name: Copiar arquivo compose pra AWS (SCP)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          source: "docker-compose-rafael-duraes.yml,init.sql"
+          target: "/home/${{ secrets.EC2_USER }}/rafael-duraes"
+
+      - name: Executar comandos na AWS (SSH)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            cd /home/${{ secrets.EC2_USER }}/rafael-duraes
+
+            # Executa o init.sql no container MySQL antes de subir a aplicação
+            echo "⏳ Executando init.sql no container mysql-infra..."
+            sudo docker exec -i mysql-infra \
+              mysql -u root -ppassword < init.sql
+
+            echo "✅ init.sql executado com sucesso!"
+
+            # Faz pull da nova imagem e sobe o container da aplicação
+            sudo docker compose -f docker-compose-rafael-duraes.yml pull
+            sudo docker compose -f docker-compose-rafael-duraes.yml up -d
+
+            echo "✅ Deploy do aluno rafael-duraes finalizado com sucesso!"
