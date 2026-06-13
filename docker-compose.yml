@@ -1,6 +1,6 @@
 services:
   app:
-    image: jenrique138/app:staging
+    image: rafaaaaa/rafa-restaurante:latest
     container_name: rafarestaurante
     ports:
       - "8088:3000"
