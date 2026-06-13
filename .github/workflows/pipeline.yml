@@ -135,7 +135,7 @@ jobs:
 
   job_deploy_aws:
     needs: job_trivy
-    if: github.ref == 'refs/heads/staging'
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
