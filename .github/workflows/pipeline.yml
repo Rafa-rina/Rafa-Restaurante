@@ -134,16 +134,44 @@ jobs:
           exit-code: 0
 
   job_deploy_aws:
-    runs-on: ubuntu-latest
     needs: job_trivy
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
     steps:
-      - name: Deploy na AWS
+      - name: Checkout do código
+        uses: actions/checkout@v5
+
+      - name: Preparar arquivo Compose com o identificador do aluno
+        run: |
+          cp docker-compose.yml docker-compose-rafael-duraes.yml
+
+      - name: Copiar arquivo compose pra AWS (SCP)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          source: "docker-compose-rafael-duraes.yml,init.sql"
+          target: "/home/${{ secrets.EC2_USER }}/rafael-duraes"
+
+      - name: Executar comandos na AWS (SSH)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.AWS_KEY }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            cd /home/ubuntu/Rafa-Restaurante
-            docker compose pull
-            docker compose up -d
+            cd /home/${{ secrets.EC2_USER }}/rafael-duraes
+
+            # Executa o init.sql no container MySQL antes de subir a aplicação
+            echo "⏳ Executando init.sql no container mysql-infra..."
+            sudo docker exec -i mysql-infra \
+              mysql -u root -ppassword < init.sql
+
+            echo "✅ init.sql executado com sucesso!"
+
+            # Faz pull da nova imagem e sobe o container da aplicação
+            sudo docker compose -f docker-compose-rafael-duraes.yml pull
+            sudo docker compose -f docker-compose-rafael-duraes.yml up -d
+
+            echo "✅ Deploy do aluno rafael-duraes finalizado com sucesso!"
