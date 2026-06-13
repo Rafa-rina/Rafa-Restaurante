@@ -140,8 +140,8 @@ jobs:
       - name: Deploy na AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.AWS_KEY }}
           script: |
             cd /home/ubuntu/Rafa-Restaurante
