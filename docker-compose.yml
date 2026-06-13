@@ -3,7 +3,7 @@ services:
     image: jenrique138/app:staging
     container_name: rafarestaurante
     ports:
-      - "<PORTADOALUNO>:3000"
+      - "8088:3000"
     environment:
       DB_HOST: mysql-infra
       DB_PORT: 3306
