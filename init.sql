@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS rafa-restaurante;
-USE rafa-restaurante; 
+CREATE DATABASE IF NOT EXISTS rafarestaurante;
+USE rafarestaurante; 
 
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
