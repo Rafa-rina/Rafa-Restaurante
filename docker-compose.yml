@@ -1,7 +1,7 @@
 services:
   app:
     image: jenrique138/app:staging
-    container_name: rafa-restaurante
+    container_name: rafarestaurante
     ports:
       - "<PORTADOALUNO>:3000"
     environment:
@@ -9,7 +9,7 @@ services:
       DB_PORT: 3306
       DB_USER: root
       DB_PASS: password
-      DB_NAME: rafa-restaurante
+      DB_NAME: rafarestaurante
     networks:
       - rede_alunos
 networks:
